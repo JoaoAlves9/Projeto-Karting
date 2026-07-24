@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <title>Karting LIVE</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: "Courier New", Courier, monospace;
+            background: #0d0d0d;
+            color: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ─── CABEÇALHO ─── */
+        .header {
+            padding: 12px 16px 8px;
+            border-bottom: 1px solid #1a1a1a;
+        }
+        .header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+        .header h1 {
+            font-size: 13px;
+            letter-spacing: 3px;
+            color: #444;
+        }
+        .live-dot {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            color: #444;
+        }
+        .live-dot .dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: #444;
+            animation: blink 1.2s infinite;
+        }
+        .live-dot.connected .dot { background: #00ff44; }
+        .live-dot.connected { color: #00ff44; }
+        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+        /* ─── BANDEIRA TOPO ─── */
+        .flag-bar {
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: bold;
+            letter-spacing: 3px;
+            background: #111;
+            color: #333;
+            transition: background 0.3s, color 0.3s;
+        }
+        .flag-bar.verde    { background: #003a0f; color: #00ff44; }
+        .flag-bar.vermelho { background: #3a0000; color: #ff4444; }
+        .flag-bar.amarelo  { background: #3a2800; color: #ffcc00; }
+        .flag-bar.azul     { background: #00103a; color: #4488ff; }
+
+        /* ─── TABELA ─── */
+        .table-wrap { flex: 1; padding: 0 8px; }
+
+        .table-header {
+            display: grid;
+            grid-template-columns: 1fr 60px 30px 60px 60px;
+            padding: 8px 6px 4px;
+            color: #444;
+            font-size: 11px;
+            letter-spacing: 1px;
+            border-bottom: 1px solid #1a1a1a;
+        }
+
+        .pilot-row {
+            display: grid;
+            grid-template-columns: 1fr 60px 30px 60px 60px;
+            align-items: center;
+            padding: 10px 6px;
+            border-bottom: 1px solid #141414;
+            position: relative;
+        }
+        .pilot-row:first-child { border-top: none; }
+
+        /* Barra de posição colorida */
+        .pilot-name {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        .pos-bar {
+            width: 4px;
+            height: 28px;
+            border-radius: 2px;
+            flex-shrink: 0;
+        }
+        .pos-1 { background: #00ff44; }
+        .pos-2 { background: #4488ff; }
+        .pos-3 { background: #ff4444; }
+        .pos-4 { background: #888; }
+        .pos-5 { background: #555; }
+
+        .gap-cell, .difer-cell {
+            text-align: right;
+            font-size: 14px;
+            color: #aaa;
+            font-weight: bold;
+        }
+        .gap-cell.lider { color: #00ff44; font-size: 13px; }
+
+        /* ─── TIMER GRANDE ─── */
+        .timer-section {
+            padding: 20px 16px 30px;
+            text-align: center;
+            border-top: 1px solid #1a1a1a;
+        }
+        .timer-label {
+            font-size: 10px;
+            color: #333;
+            letter-spacing: 3px;
+            margin-bottom: 6px;
+        }
+        .big-timer {
+            font-size: 52px;
+            font-weight: bold;
+            color: #ffffff;
+            letter-spacing: 4px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div class="header-row">
+        <h1>KARTING LIVE</h1>
+        <div class="live-dot" id="conn">
+            <div class="dot"></div>
+            <span>SEM SINAL</span>
+        </div>
+    </div>
+</div>
+
+<div class="flag-bar" id="flag-bar">NENHUMA BANDEIRA</div>
+
+<div class="table-wrap">
+    <div class="table-header">
+        <span>PILOTO (NO)</span>
+        <span style="text-align:right">ULTIMO</span>
+        <span style="text-align:right">V</span>
+        <span style="text-align:right">TOTAL</span>
+        <span style="text-align:right">DIFF</span>
+    </div>
+    <div id="pilots-list"></div>
+</div>
+
+<div class="timer-section">
+    <div class="timer-label">TEMPO DE SESSÃO</div>
+    <div class="big-timer" id="big-timer">00:00:00</div>
+</div>
+
+<script>
+    function fmt(secs) {
+        secs = Math.max(0, Math.floor(secs));
+        const h = Math.floor(secs / 3600);
+        const m = Math.floor((secs % 3600) / 60);
+        const s = secs % 60;
+        return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    }
+
+    function abbrev(name) {
+        // Tenta abreviar para 3 letras apanhando o apelido
+        const parts = name.trim().split(' ');
+        if (parts.length > 1) return parts[parts.length - 1].substring(0, 3).toUpperCase();
+        return name.substring(0, 3).toUpperCase();
+    }
+
+    function poll() {
+        fetch('/api/state')
+            .then(r => r.json())
+            .then(data => {
+                // ── Conexão ──
+                const conn = document.getElementById('conn');
+                conn.className = 'live-dot connected';
+                conn.querySelector('span').textContent = 'LIVE';
+
+                // ── Bandeira ──
+                const flagBar = document.getElementById('flag-bar');
+                flagBar.className = 'flag-bar ' + data.bandeira;
+                flagBar.textContent = data.bandeira === 'none'
+                    ? 'NENHUMA BANDEIRA'
+                    : data.bandeira.toUpperCase();
+
+                // ── Pilotos ──
+                const posClasses = ['pos-1','pos-2','pos-3','pos-4','pos-5'];
+                let html = '';
+                data.pilots.forEach((p, i) => {
+                    const posClass = posClasses[i] || 'pos-5';
+                    const isLider = p.pos === 1;
+                    const diffText = isLider ? '-' : (p.diff || '--');
+                    html += `
+                    <div class="pilot-row">
+                        <div class="pilot-name">
+                            <div class="pos-bar ${posClass}"></div>
+                            <span>${abbrev(p.nome)} (${p.no || '-'})</span>
+                        </div>
+                        <div style="text-align:right; font-size:12px; color:#aaa; font-weight:bold;">${p.ultimo || '--'}</div>
+                        <div style="text-align:right; font-size:12px; color:#aaa; font-weight:bold;">${p.volta || '-'}</div>
+                        <div style="text-align:right; font-size:12px; color:#aaa; font-weight:bold;">${p.total || '--'}</div>
+                        <div style="text-align:right; font-size:12px; font-weight:bold;" class="${isLider ? 'lider' : ''}">${diffText}</div>
+                    </div>`;
+                });
+                document.getElementById('pilots-list').innerHTML = html;
+
+                // ── Timer ──
+                document.getElementById('big-timer').textContent = fmt(data.session_time);
+            })
+            .catch(() => {
+                const conn = document.getElementById('conn');
+                conn.className = 'live-dot';
+                conn.querySelector('span').textContent = 'SEM SINAL';
+            });
+    }
+
+    setInterval(poll, 800);
+    poll();
+</script>
+</body>
+</html>

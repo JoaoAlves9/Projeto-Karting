@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin - Karting Controlo</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: "Courier New", Courier, monospace;
+            background: #0a0a0a;
+            color: #ffffff;
+            padding: 10px;
+        }
+
+        /* HEADER */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0 14px 0;
+            border-bottom: 1px solid #222;
+            margin-bottom: 12px;
+        }
+        .header h1 { font-size: 16px; color: #cc1100; letter-spacing: 2px; }
+        .status-bar {
+            font-size: 11px;
+            color: #444;
+            text-align: right;
+        }
+        .status-bar span { color: #00ff88; }
+
+        /* SECTION */
+        .section {
+            border: 1px solid #2a2a2a;
+            border-radius: 6px;
+            margin-bottom: 12px;
+            overflow: hidden;
+        }
+        .section-title {
+            background: #141414;
+            color: #555;
+            font-size: 10px;
+            letter-spacing: 2px;
+            padding: 6px 10px;
+            border-bottom: 1px solid #222;
+        }
+        .section-body { padding: 10px; }
+
+        /* BUTTONS */
+        .btn {
+            display: inline-block;
+            padding: 14px 10px;
+            font-family: "Courier New", Courier, monospace;
+            font-size: 13px;
+            font-weight: bold;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-align: center;
+            transition: opacity 0.1s;
+            width: 100%;
+            margin-bottom: 8px;
+        }
+        .btn:active { opacity: 0.7; }
+        .btn:disabled { opacity: 0.3; cursor: default; }
+
+        .btn-row { display: flex; gap: 8px; margin-bottom: 8px; }
+        .btn-row .btn { margin-bottom: 0; }
+
+        /* Colors */
+        .bg-red    { background:#880000; color:#ff4444; }
+        .bg-green  { background:#004411; color:#00ff66; }
+        .bg-yellow { background:#554400; color:#ffcc00; }
+        .bg-blue   { background:#002255; color:#4488ff; }
+        .bg-purple { background:#220033; color:#cc88ff; }
+        .bg-teal   { background:#003333; color:#00ffcc; }
+        .bg-orange { background:#332200; color:#ffaa00; }
+        .bg-pink   { background:#330033; color:#ff88ff; }
+        .bg-dark   { background:#1a1a1a; color:#777; }
+        .bg-navy   { background:#1a1a2e; color:#8888ff; }
+        .bg-restart{ background:#440000; color:#ff4444; }
+        .bg-olive  { background:#1a1a00; color:#888800; }
+        .bg-go     { background:#006622; color:#00ff88; }
+
+        /* SEMAPHORE LIGHTS MINI */
+        .sema-lights {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        .sema-light {
+            width: 32px; height: 32px;
+            border-radius: 50%;
+            background: #1a0000;
+            border: 1px solid #222;
+            transition: background 0.2s;
+        }
+        .sema-light.red   { background: #ff2200; box-shadow: 0 0 8px #ff2200; }
+        .sema-light.green { background: #00ff44; box-shadow: 0 0 8px #00ff44; }
+
+        /* TIMER SET */
+        .timer-set {
+            display: flex;
+            justify-content: center;
+            gap: 6px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+        .timer-set label { font-size: 10px; color: #444; }
+        .timer-set input[type=number] {
+            width: 52px;
+            background: #1a1a1a;
+            color: #fff;
+            border: 1px solid #333;
+            border-radius: 4px;
+            font-family: "Courier New", Courier, monospace;
+            font-size: 16px;
+            font-weight: bold;
+            padding: 6px 4px;
+            text-align: center;
+        }
+
+        /* SEMA AUTO wait input */
+        .auto-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            font-size: 11px;
+            color: #555;
+        }
+        .auto-row input[type=number] {
+            width: 52px;
+            background: #1a1a1a;
+            color: #00ffcc;
+            border: 1px solid #333;
+            border-radius: 4px;
+            font-family: "Courier New", Courier, monospace;
+            font-size: 14px;
+            font-weight: bold;
+            padding: 4px;
+            text-align: center;
+        }
+
+        /* SEMA INFO */
+        .sema-info {
+            text-align: center;
+            font-size: 11px;
+            color: #555;
+            padding: 6px;
+            min-height: 22px;
+        }
+        .sema-info.go { color: #00ff44; font-size: 18px; }
+
+        /* SESSION TIME DISPLAY */
+        .session-time {
+            text-align: center;
+            font-size: 36px;
+            font-weight: bold;
+            color: #00ff88;
+            padding: 6px 0;
+            letter-spacing: 4px;
+        }
+        .session-time.running { color: #00ff88; }
+        .session-time.stopped { color: #555; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>RACE CONTROL</h1>
+    <div class="status-bar" id="conn-status">A ligar...</div>
+</div>
+
+<!-- RESTART -->
+<button class="btn bg-restart" onclick="cmd('RESTART')">↺  RESTART GERAL</button>
+
+<!-- SEMÁFORO -->
+<div class="section">
+    <div class="section-title">SEMÁFORO</div>
+    <div class="section-body">
+        <div class="sema-lights">
+            <div class="sema-light" id="sl0"></div>
+            <div class="sema-light" id="sl1"></div>
+            <div class="sema-light" id="sl2"></div>
+            <div class="sema-light" id="sl3"></div>
+            <div class="sema-light" id="sl4"></div>
+        </div>
+        <div class="sema-info" id="sema-info">Seleciona um modo</div>
+
+        <div class="btn-row">
+            <button class="btn bg-teal"   onclick="cmd('SEMA_AUTO', parseInt(document.getElementById('auto-wait').value) || 5)">AUTO</button>
+            <button class="btn bg-orange" onclick="cmd('SEMA_MANUAL')">MANUAL</button>
+        </div>
+        <div class="btn-row">
+            <button class="btn bg-pink"   onclick="cmd('SEMA_GRELHA')">GRELHA</button>
+            <button class="btn bg-dark"   onclick="cmd('SEMA_STOP')">PARAR</button>
+        </div>
+
+        <div class="auto-row">
+            <span>Tempo até verde (seg):</span>
+            <input type="number" id="auto-wait" value="5" min="1" max="60">
+        </div>
+
+        <button class="btn bg-go" id="btn-verde" onclick="cmd('SEMA_GO_GREEN')" disabled>
+            LARGAR — VERDE
+        </button>
+    </div>
+</div>
+
+<!-- BANDEIRAS -->
+<div class="section">
+    <div class="section-title">BANDEIRAS</div>
+    <div class="section-body">
+        <div class="btn-row">
+            <button class="btn bg-green"  onclick="cmd('FLAG','verde')">VERDE</button>
+            <button class="btn bg-red"    onclick="cmd('FLAG','vermelho')">VERMELHA</button>
+        </div>
+        <div class="btn-row">
+            <button class="btn bg-yellow" onclick="cmd('FLAG','amarelo')">AMARELA</button>
+            <button class="btn bg-blue"   onclick="cmd('FLAG','azul')">AZUL</button>
+        </div>
+        <button class="btn bg-dark" onclick="cmd('FLAG','none')">Sem Bandeira</button>
+    </div>
+</div>
+
+<!-- SECTOR -->
+<div class="section">
+    <div class="section-title">SECTOR</div>
+    <div class="section-body">
+        <div class="btn-row">
+            <button class="btn bg-navy" onclick="cmd('SECTOR','S1')">S1</button>
+            <button class="btn bg-navy" onclick="cmd('SECTOR','S2')">S2</button>
+            <button class="btn bg-navy" onclick="cmd('SECTOR','S3')">S3</button>
+            <button class="btn bg-dark" onclick="cmd('SECTOR','none')">TODOS</button>
+        </div>
+    </div>
+</div>
+
+<!-- TEMPO DE SESSÃO -->
+<div class="section">
+    <div class="section-title">TEMPO DE SESSÃO</div>
+    <div class="section-body">
+        <div class="session-time stopped" id="session-display">00:00:00</div>
+
+        <div class="timer-set">
+            <label>H</label>
+            <input type="number" id="t-h" value="0" min="0" max="23">
+            <label>M</label>
+            <input type="number" id="t-m" value="30" min="0" max="59">
+            <label>S</label>
+            <input type="number" id="t-s" value="0" min="0" max="59">
+        </div>
+        <button class="btn bg-dark" onclick="setTimer()" style="margin-bottom:10px;">Definir Tempo</button>
+        <div class="btn-row">
+            <button class="btn bg-green"  onclick="cmd('TIMER_START')">INICIAR</button>
+            <button class="btn bg-dark"   onclick="cmd('TIMER_STOP')">PARAR</button>
+            <button class="btn bg-red"    onclick="cmd('TIMER_RESET')">FECHAR</button>
+        </div>
+    </div>
+</div>
+
+<!-- ECRÃ DISPLAY -->
+<div class="section">
+    <div class="section-title">ECRÃ DISPLAY</div>
+    <div class="section-body">
+        <div class="btn-row">
+            <button class="btn bg-purple" onclick="cmd('PHASE','semaforo')">Mostrar Semáforo</button>
+            <button class="btn bg-teal"   onclick="cmd('PHASE','race')">Mostrar Corrida</button>
+        </div>
+    </div>
+</div>
+
+<!-- PILOTOS -->
+<div class="section">
+    <div class="section-title">PILOTOS</div>
+    <div class="section-body">
+        <button class="btn bg-olive" onclick="cmd('TEST_PILOTS')">Carregar Dados Teste</button>
+    </div>
+</div>
+
+<script>
+    function fmt(secs) {
+        secs = Math.max(0, Math.floor(secs));
+        const h = Math.floor(secs / 3600);
+        const m = Math.floor((secs % 3600) / 60);
+        const s = secs % 60;
+        return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    }
+
+    function cmd(c, val) {
+        fetch('/api/command', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ cmd: c, val: val !== undefined ? val : null })
+        }).catch(e => console.error('Erro ao enviar comando:', e));
+    }
+
+    function setTimer() {
+        const h = parseInt(document.getElementById('t-h').value) || 0;
+        const m = parseInt(document.getElementById('t-m').value) || 0;
+        const s = parseInt(document.getElementById('t-s').value) || 0;
+        cmd('TIMER_SET', { h, m, s });
+    }
+
+    // Polling do estado a cada 500ms
+    function pollState() {
+        fetch('/api/state')
+            .then(r => r.json())
+            .then(data => {
+                document.getElementById('conn-status').innerHTML = '● <span>LIGADO</span>';
+
+                // Luzes do semáforo
+                for (let i = 0; i < 5; i++) {
+                    const el = document.getElementById('sl' + i);
+                    el.className = 'sema-light';
+                    if (data.sema_green)         el.classList.add('green');
+                    else if (data.sema_lights[i]) el.classList.add('red');
+                }
+
+                // Info semáforo
+                const infoEl = document.getElementById('sema-info');
+                if (data.sema_green) {
+                    infoEl.textContent = 'GO!';
+                    infoEl.className = 'sema-info go';
+                } else {
+                    const modes = { auto: 'AUTOMÁTICO', manual: 'MANUAL', grelha: 'GRELHA', none: 'Seleciona um modo' };
+                    infoEl.textContent = modes[data.sema_mode] || '';
+                    infoEl.className = 'sema-info';
+                }
+
+                // Botão LARGAR - só ativa quando MANUAL acabou de acender as 5 luzes
+                const btnVerde = document.getElementById('btn-verde');
+                btnVerde.disabled = !data.sema_waiting_green;
+
+                // Tempo de sessão
+                const dispEl = document.getElementById('session-display');
+                dispEl.textContent = fmt(data.session_time);
+                dispEl.className = 'session-time ' + (data.session_running ? 'running' : 'stopped');
+            })
+            .catch(() => {
+                document.getElementById('conn-status').textContent = '✕ Sem ligação';
+            });
+    }
+
+    setInterval(pollState, 500);
+    pollState();
+</script>
+</body>
+</html>
